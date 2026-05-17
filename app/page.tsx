@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { AuthPanel } from "./components/AuthPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export default async function Home() {
                 RSSから取得した記事を新しい順に表示します。
               </p>
             </div>
+            <AuthPanel />
           </div>
         </header>
 
