@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./components/AuthPanel";
+import { FetchNewsButton } from "./components/FetchNewsButton";
 import { SaveArticleButton } from "./components/SaveArticleButton";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,7 @@ export default async function Home() {
               <p className="max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-400">
                 RSSから取得した記事を新しい順に表示します。
               </p>
+              <FetchNewsButton />
             </div>
             <AuthPanel />
           </div>
