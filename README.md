@@ -107,6 +107,60 @@ RSSから取得した記事本体を保存する共通テーブルです。
 - `saved_articles` はユーザーごとの保存状態・読了状態・メモを持つため、本人だけが操作できるようにします
 - 「記事一覧は公開、保存・メモはログイン後」という役割分担にします
 
+## RSS取得機能
+
+Dev AI Digestでは、固定RSSフィードから記事を取得し、`articles` テーブルに保存します。
+
+### 対象RSSフィード
+
+現在のv1では、以下の固定RSSフィードを対象にしています。
+
+- OpenAI News
+  - category: AIモデル
+- Zenn LLM
+  - category: AI活用
+- Qiita AI
+  - category: AI活用
+
+### 取得方法
+
+- トップページの「ニュースを取得」ボタンから手動でRSS取得を実行します
+- ボタン押下時に `POST /api/fetch-news` を呼び出します
+- Route Handler内でRSSを取得・パースし、`articles` テーブルに保存します
+- `articles.url` のunique制約を使い、同じ記事が重複登録されないようにしています
+
+### セキュリティ方針
+
+- `articles` への追加はクライアントから直接行いません
+- RSS取得・DB保存はRoute Handler経由で実行します
+- サーバー側では `SUPABASE_SERVICE_ROLE_KEY` を使用します
+- `SUPABASE_SERVICE_ROLE_KEY` は `NEXT_PUBLIC_` を付けず、ブラウザに公開しません
+- service role keyは `.env.local` で管理し、Gitには含めません
+
+### v1でやらないこと
+
+RSS取得に関して、v1では以下はまだ実装しません。
+
+- Vercel Cronによる自動取得
+- AIによる記事要約
+- LINE通知
+- ユーザーごとのRSSフィード追加
+- 記事本文のスクレイピング
+- 取得履歴テーブル
+- 高度なレコメンド
+
+## 環境変数
+
+RSS取得機能では、既存のSupabase接続情報に加えて、サーバー側で以下の環境変数を使用します。
+
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+注意点：
+
+- `SUPABASE_SERVICE_ROLE_KEY` はサーバー側専用です
+- `NEXT_PUBLIC_` を付けないでください
+- `.env.local` に設定し、Gitにはコミットしないでください
+
 ## 今後の拡張
 
 - AIによる記事要約
