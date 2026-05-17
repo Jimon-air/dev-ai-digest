@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./components/AuthPanel";
+import { SaveArticleButton } from "./components/SaveArticleButton";
 
 export const dynamic = "force-dynamic";
 
@@ -88,14 +89,17 @@ export default async function Home() {
                     <h2 className="text-xl font-semibold leading-8 text-zinc-950 dark:text-zinc-50">
                       {article.title}
                     </h2>
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-fit text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
-                    >
-                      記事を開く
-                    </a>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <a
+                        href={article.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-fit text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
+                      >
+                        記事を開く
+                      </a>
+                      <SaveArticleButton articleId={article.id} />
+                    </div>
                   </div>
                 </div>
               </article>
