@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./components/AuthPanel";
 import { SaveArticleButton } from "./components/SaveArticleButton";
@@ -47,6 +48,14 @@ export default async function Home() {
           <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
             Dev AI Digest
           </p>
+          <nav aria-label="メインナビゲーション">
+            <Link
+              href="/saved"
+              className="text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
+            >
+              保存済み記事を見る
+            </Link>
+          </nav>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col gap-3">
               <h1 className="text-3xl font-semibold tracking-normal text-zinc-950 sm:text-4xl dark:text-zinc-50">
