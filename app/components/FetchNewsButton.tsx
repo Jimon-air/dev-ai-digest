@@ -5,7 +5,9 @@ import { useState } from "react";
 
 type FetchNewsResponse = {
   message: string;
-  fetchedCount: number;
+  rssItemCount: number;
+  candidateCount: number;
+  targetCount: number;
   insertedCount: number;
   skippedCount: number;
 };
@@ -33,7 +35,7 @@ export function FetchNewsButton() {
       }
 
       setMessage(
-        `${result.message} 取得: ${result.fetchedCount}件 / 追加: ${result.insertedCount}件 / スキップ: ${result.skippedCount}件`,
+        `${result.message} RSS取得: ${result.rssItemCount}件 / 候補: ${result.candidateCount}件 / 保存対象: ${result.targetCount}件 / 追加: ${result.insertedCount}件 / スキップ: ${result.skippedCount}件`,
       );
       router.refresh();
     } catch {
