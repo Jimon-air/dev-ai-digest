@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type FetchNewsResponse = {
   message: string;
@@ -14,11 +14,17 @@ type FetchNewsResponse = {
 
 export function FetchNewsButton() {
   const router = useRouter();
+  const isRequestInFlight = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleFetchNews() {
+    if (isRequestInFlight.current) {
+      return;
+    }
+
+    isRequestInFlight.current = true;
     setIsLoading(true);
     setMessage(null);
     setErrorMessage(null);
@@ -41,6 +47,7 @@ export function FetchNewsButton() {
     } catch {
       setErrorMessage("ニュース取得に失敗しました。");
     } finally {
+      isRequestInFlight.current = false;
       setIsLoading(false);
     }
   }
