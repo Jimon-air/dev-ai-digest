@@ -1,22 +1,30 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type FetchNewsResponse = {
   message: string;
-  fetchedCount: number;
+  rssItemCount: number;
+  candidateCount: number;
+  targetCount: number;
   insertedCount: number;
   skippedCount: number;
 };
 
 export function FetchNewsButton() {
   const router = useRouter();
+  const isRequestInFlight = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleFetchNews() {
+    if (isRequestInFlight.current) {
+      return;
+    }
+
+    isRequestInFlight.current = true;
     setIsLoading(true);
     setMessage(null);
     setErrorMessage(null);
@@ -33,12 +41,13 @@ export function FetchNewsButton() {
       }
 
       setMessage(
-        `${result.message} 取得: ${result.fetchedCount}件 / 追加: ${result.insertedCount}件 / スキップ: ${result.skippedCount}件`,
+        `${result.message} RSS取得: ${result.rssItemCount}件 / 候補: ${result.candidateCount}件 / 保存対象: ${result.targetCount}件 / 追加: ${result.insertedCount}件 / スキップ: ${result.skippedCount}件`,
       );
       router.refresh();
     } catch {
       setErrorMessage("ニュース取得に失敗しました。");
     } finally {
+      isRequestInFlight.current = false;
       setIsLoading(false);
     }
   }

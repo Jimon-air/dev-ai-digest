@@ -7,7 +7,14 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export function createSupabaseAdminClient() {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error("Supabase admin環境変数が設定されていません");
+    const missingKeys = [
+      !supabaseUrl ? "NEXT_PUBLIC_SUPABASE_URL" : null,
+      !supabaseServiceRoleKey ? "SUPABASE_SERVICE_ROLE_KEY" : null,
+    ].filter(Boolean);
+
+    throw new Error(
+      `Supabase admin環境変数が設定されていません: ${missingKeys.join(", ")}`,
+    );
   }
 
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
