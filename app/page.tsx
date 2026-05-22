@@ -1,36 +1,13 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import {
+  ArticleFiltersAndList,
+  type Article,
+} from "./components/ArticleFiltersAndList";
 import { AuthPanel } from "./components/AuthPanel";
 import { FetchNewsButton } from "./components/FetchNewsButton";
-import { SaveArticleButton } from "./components/SaveArticleButton";
 
 export const dynamic = "force-dynamic";
-
-type Article = {
-  id: string;
-  title: string;
-  url: string;
-  source: string | null;
-  category: string | null;
-  published_at: string | null;
-};
-
-function formatPublishedAt(value: string | null) {
-  if (!value) {
-    return "公開日時なし";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("ja-JP", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 export default async function Home() {
   const { data: articles, error } = await supabase
@@ -79,43 +56,7 @@ export default async function Home() {
             </p>
           </section>
         ) : articles && articles.length > 0 ? (
-          <section className="grid gap-4">
-            {(articles as Article[]).map((article) => (
-              <article
-                key={article.id}
-                className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
-              >
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                    <span>{article.source ?? "情報源なし"}</span>
-                    <span aria-hidden="true">/</span>
-                    <span>{article.category ?? "カテゴリなし"}</span>
-                    <span aria-hidden="true">/</span>
-                    <time dateTime={article.published_at ?? undefined}>
-                      {formatPublishedAt(article.published_at)}
-                    </time>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <h2 className="text-xl font-semibold leading-8 text-zinc-950 dark:text-zinc-50">
-                      {article.title}
-                    </h2>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <a
-                        href={article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-fit text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
-                      >
-                        記事を開く
-                      </a>
-                      <SaveArticleButton articleId={article.id} />
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </section>
+          <ArticleFiltersAndList articles={articles as Article[]} />
         ) : (
           <section className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
             <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
