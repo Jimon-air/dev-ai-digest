@@ -58,12 +58,12 @@ export function FetchNewsButton() {
         type="button"
         onClick={handleFetchNews}
         disabled={isLoading}
-        className="inline-flex h-10 w-fit items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
+        className="inline-flex h-10 w-full items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400 sm:w-fit"
       >
         {isLoading ? "取得中..." : "ニュースを取得"}
       </button>
       {message ? (
-        <p className="text-sm leading-6 text-emerald-700 dark:text-emerald-400">
+        <p className="max-w-2xl text-sm leading-6 text-emerald-700 dark:text-emerald-400">
           {message}
         </p>
       ) : null}
