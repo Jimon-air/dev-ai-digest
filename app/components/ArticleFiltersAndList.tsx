@@ -17,9 +17,28 @@ type ArticleFiltersAndListProps = {
 };
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const ISO_TIME_ZONE_PATTERN = /(Z|[+-]\d{2}:?\d{2})$/i;
 
 function padDatePart(value: number) {
   return String(value).padStart(2, "0");
+}
+
+function parseDateTime(value: string) {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return Number.NaN;
+  }
+
+  if (ISO_TIME_ZONE_PATTERN.test(trimmedValue)) {
+    return Date.parse(trimmedValue);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+    return Date.parse(`${trimmedValue}T00:00:00Z`);
+  }
+
+  return Date.parse(`${trimmedValue.replace(" ", "T")}Z`);
 }
 
 function formatPublishedAt(value: string | null) {
@@ -27,13 +46,13 @@ function formatPublishedAt(value: string | null) {
     return "公開日時なし";
   }
 
-  const date = new Date(value);
+  const timestamp = parseDateTime(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(timestamp)) {
     return "日時不明";
   }
 
-  const jstDate = new Date(date.getTime() + JST_OFFSET_MS);
+  const jstDate = new Date(timestamp + JST_OFFSET_MS);
   const year = jstDate.getUTCFullYear();
   const month = padDatePart(jstDate.getUTCMonth() + 1);
   const day = padDatePart(jstDate.getUTCDate());
