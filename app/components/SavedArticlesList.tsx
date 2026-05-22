@@ -56,6 +56,26 @@ function getArticle(savedArticle: SavedArticle) {
   return savedArticle.articles;
 }
 
+function getStatusLabel(status: string | null) {
+  if (status === "unread") {
+    return "未読";
+  }
+
+  if (status === "read") {
+    return "読了";
+  }
+
+  return "未設定";
+}
+
+function getNextStatus(status: string | null) {
+  return status === "read" ? "unread" : "read";
+}
+
+function getToggleStatusLabel(status: string | null) {
+  return status === "read" ? "未読に戻す" : "読了にする";
+}
+
 async function fetchSavedArticles(userId: string) {
   const relationResult = await supabase
     .from("saved_articles")
@@ -128,6 +148,12 @@ export function SavedArticlesList() {
   const [isLoading, setIsLoading] = useState(false);
   const [savedArticles, setSavedArticles] = useState<SavedArticle[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [updatingSavedArticleId, setUpdatingSavedArticleId] = useState<
+    string | null
+  >(null);
+  const [statusErrorById, setStatusErrorById] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     let isMounted = true;
@@ -154,6 +180,8 @@ export function SavedArticlesList() {
 
       if (!session?.user) {
         setSavedArticles([]);
+        setStatusErrorById({});
+        setUpdatingSavedArticleId(null);
       }
     });
 
@@ -198,6 +226,45 @@ export function SavedArticlesList() {
       isMounted = false;
     };
   }, [user]);
+
+  async function handleToggleStatus(savedArticle: SavedArticle) {
+    if (!user || updatingSavedArticleId) {
+      return;
+    }
+
+    const nextStatus = getNextStatus(savedArticle.status);
+
+    setUpdatingSavedArticleId(savedArticle.id);
+    setStatusErrorById((current) => {
+      const next = { ...current };
+      delete next[savedArticle.id];
+      return next;
+    });
+
+    const { error } = await supabase
+      .from("saved_articles")
+      .update({ status: nextStatus })
+      .eq("id", savedArticle.id)
+      .eq("user_id", user.id);
+
+    setUpdatingSavedArticleId(null);
+
+    if (error) {
+      setStatusErrorById((current) => ({
+        ...current,
+        [savedArticle.id]: "状態を更新できませんでした。",
+      }));
+      return;
+    }
+
+    setSavedArticles((current) =>
+      current.map((article) =>
+        article.id === savedArticle.id
+          ? { ...article, status: nextStatus }
+          : article,
+      ),
+    );
+  }
 
   if (isAuthLoading) {
     return (
@@ -270,6 +337,7 @@ export function SavedArticlesList() {
     <section className="grid gap-4">
       {savedArticles.map((savedArticle) => {
         const article = getArticle(savedArticle);
+        const isUpdatingStatus = updatingSavedArticleId === savedArticle.id;
 
         return (
           <article
@@ -297,7 +365,24 @@ export function SavedArticlesList() {
                     <dt className="font-medium text-zinc-950 dark:text-zinc-50">
                       状態
                     </dt>
-                    <dd className="mt-1">{savedArticle.status ?? "未設定"}</dd>
+                    <dd className="mt-2 flex flex-col gap-2">
+                      <span>{getStatusLabel(savedArticle.status)}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(savedArticle)}
+                        disabled={isUpdatingStatus}
+                        className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-500 disabled:hover:bg-transparent dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:disabled:border-zinc-700 dark:disabled:text-zinc-400"
+                      >
+                        {isUpdatingStatus
+                          ? "更新中..."
+                          : getToggleStatusLabel(savedArticle.status)}
+                      </button>
+                      {statusErrorById[savedArticle.id] ? (
+                        <span className="text-sm leading-6 text-red-700 dark:text-red-400">
+                          {statusErrorById[savedArticle.id]}
+                        </span>
+                      ) : null}
+                    </dd>
                   </div>
                   <div>
                     <dt className="font-medium text-zinc-950 dark:text-zinc-50">
