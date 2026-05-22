@@ -1,43 +1,74 @@
 # Dev AI Digest
 
-Dev AI Digestは、AI・開発ツール関連ニュースをRSSから取得し、気になる記事を保存・読了管理できる開発者向けニュースダッシュボードです。
+Dev AI Digestは、AI・開発ツール関連ニュースをRSSから取得し、気になる記事を保存・読了管理・メモ編集できる開発者向けニュースダッシュボードです。
 
 ## 作成目的
 
-AI時代のフロントエンドエンジニアとして、日々増えるAI・開発ツール関連ニュースを自分で探し回らずに確認し、気になる記事だけ保存・振り返りできるようにするために作成します。
+AI時代のフロントエンドエンジニアとして、日々増えるAI・開発ツール関連情報を自分で探し回らずに確認し、気になる記事を保存して、自分の学びやあとで試したいこととして整理できるようにするために作成しています。
 
-## v1スコープ
+## 主な機能
 
-- ユーザー認証
-- 固定RSSフィードからの記事取得
-- 取得記事のDB保存
-- URL重複排除
+現在実装済みの主な機能は以下です。
+
+- RSSからの記事取得
 - 記事一覧表示
-- ソース別・キーワード検索
-- 気になる記事の保存
-- 保存記事の読了 / 未読管理
-- 保存記事へのメモ追加
+- 記事検索・絞り込み
+- Supabase AuthによるMagic Linkログイン
+- ログイン中ユーザーの記事保存
+- 保存済み記事一覧
+- 保存済み記事の読了 / 未読管理
+- 保存済み記事のメモ編集
 
-## v1でやらないこと
+## RSS取得機能
 
-- AIによる自動要約
-- LINE通知
-- Vercel Cronによる定期取得
-- ユーザーごとのRSSフィード追加
-- 記事本文のスクレイピング
-- 月次レポート
-- 株ポートフォリオ連携
-- レコメンド機能
+Dev AI Digestでは、固定RSSフィードから記事を取得し、`articles` テーブルに保存します。
 
-## 技術スタック予定
+### 対象RSSフィード
 
-- Next.js
-- TypeScript
-- Supabase
-- Supabase Auth
-- Supabase RLS
-- Vercel
-- Tailwind CSS
+現在は以下の固定RSSフィードを対象にしています。
+
+- OpenAI News
+- Zenn LLM
+- Qiita AI
+
+### 取得方法
+
+- トップページの「ニュースを取得」ボタンから手動でRSS取得を実行します
+- ボタン押下時に `POST /api/fetch-news` を呼び出します
+- Route Handler内でRSS取得・パース・DB保存を行います
+- RSSのパースには `rss-parser` を使用しています
+- `articles.url` のunique制約により、同じ記事の重複登録を防ぎます
+
+### 取得件数の制限
+
+RSS取得時は、保存対象が増えすぎないように以下の制限をかけています。
+
+- 各RSSフィードごとに最大5件まで候補化
+- 全フィード合算後、全体最大10件まで保存対象化
+- `published_at` がある記事は新しい順を優先
+- URLまたはtitleがない記事は除外
+- 同一取得内のURL重複は1件化
+
+## 検索・絞り込み
+
+トップページの記事一覧では、取得済み記事に対して以下の検索・絞り込みができます。
+
+- タイトル検索
+- `source` での絞り込み
+- `category` での絞り込み
+- 条件クリア
+
+検索・絞り込みは、現時点ではクライアント側で行っています。将来的に記事数が増えた場合は、Supabase側のクエリ検索へ移行する想定です。
+
+## 保存済み記事管理
+
+ログイン中ユーザーは、トップページの記事一覧から気になる記事を保存できます。
+
+- `/saved` で自分が保存した記事を確認できます
+- 保存済み記事は読了 / 未読を切り替えられます
+- 保存済み記事に自分用メモを残せます
+- 読了状態は `saved_articles.status` に保存します
+- メモは `saved_articles.memo` に保存します
 
 ## DB設計
 
@@ -47,107 +78,71 @@ RSSから取得した記事本体を保存する共通テーブルです。
 
 主なカラム：
 
-- id: 記事ID
-- title: 記事タイトル
-- url: 記事URL
-- source: 情報源
-- category: カテゴリ
-- published_at: 記事の公開日時
-- fetched_at: RSSから取得した日時
-- created_at: レコード作成日時
+- id
+- title
+- url
+- source
+- category
+- published_at
+- fetched_at
+- created_at
 
 設計方針：
 
-- `url` に unique 制約を設定し、同じ記事が重複登録されないようにします
-- v1では未ログインユーザーを含めて、記事一覧を閲覧できる想定です
-- クライアントから誰でも記事を追加・編集・削除できるようにはしません
-- 記事追加は、管理画面またはサーバー側のRSS取得処理から行う想定です
+- `url` にunique制約を設定して重複登録を防ぎます
+- 記事一覧は未ログインでも閲覧可能です
+- クライアントからの直接insert / update / deleteは許可しません
+- RSS取得Route Handler経由で記事を追加します
 
 ### saved_articles
 
-ユーザーが保存した記事の状態を管理するテーブルです。
+ユーザーごとの保存記事情報を管理するテーブルです。
 
 主なカラム：
 
-- id: 保存記事ID
-- user_id: 保存したユーザーID
-- article_id: 保存対象の記事ID
-- status: 読了状態
-- memo: ユーザーごとのメモ
-- created_at: 保存日時
-- updated_at: 更新日時
+- id
+- user_id
+- article_id
+- status
+- memo
+- created_at
+- updated_at
 
 設計方針：
 
-- `user_id` と `article_id` の組み合わせに unique 制約を設定し、同じユーザーが同じ記事を重複保存できないようにします
-- `status` は v1 では `unread` / `read` の2種類です
-- メモや読了状態はユーザーごとに管理します
+- `user_id` と `article_id` の組み合わせにunique制約を設定します
+- 同じユーザーが同じ記事を重複保存しないようにします
+- `status` は `unread` / `read` の2種類です
+- `memo` はユーザーごとのメモです
+- RLSにより本人だけが操作可能です
 - 記事本体とユーザー固有の保存状態を分けることで、RSS取得データと個人の管理データを切り分けます
 
-## RLS方針
+## セキュリティ / RLS方針
 
 ### articles
 
-- Row Level Security を有効化済みです
-- 未ログインユーザーを含めて、記事一覧は閲覧可能です
-- v1ではクライアントからの insert / update / delete は許可しません
-- 記事追加は、管理画面またはサーバー側のRSS取得処理から行う想定です
+- 未ログインユーザーも記事一覧を閲覧できます
+- クライアントからのinsert / update / deleteは許可しません
+- 記事追加はRSS取得Route Handler経由で行います
+- RSS取得Route Handlerではサーバー側で `SUPABASE_SERVICE_ROLE_KEY` を使用します
+- `SUPABASE_SERVICE_ROLE_KEY` は `NEXT_PUBLIC_` を付けず、ブラウザに公開しません
 
 ### saved_articles
 
-- Row Level Security を有効化済みです
-- ログイン済みユーザーは自分の保存記事だけ閲覧できます
-- ログイン済みユーザーは自分の保存記事だけ追加できます
-- ログイン済みユーザーは自分の保存記事だけ更新できます
-- ログイン済みユーザーは自分の保存記事だけ削除できます
+- ログインユーザー本人だけがselect / insert / update / deleteできます
+- `saved_articles` にはauthenticatedロールへの必要なgrantを付与しています
+- RLSにより、保存状態・読了状態・メモは本人だけが操作できます
 
-設計意図：
+## 技術スタック
 
-- `articles` はRSSから取得した共通の記事データなので、一覧閲覧は公開します
-- `saved_articles` はユーザーごとの保存状態・読了状態・メモを持つため、本人だけが操作できるようにします
-- 「記事一覧は公開、保存・メモはログイン後」という役割分担にします
-
-## RSS取得機能
-
-Dev AI Digestでは、固定RSSフィードから記事を取得し、`articles` テーブルに保存します。
-
-### 対象RSSフィード
-
-現在のv1では、以下の固定RSSフィードを対象にしています。
-
-- OpenAI News
-  - category: AIモデル
-- Zenn LLM
-  - category: AI活用
-- Qiita AI
-  - category: AI活用
-
-### 取得方法
-
-- トップページの「ニュースを取得」ボタンから手動でRSS取得を実行します
-- ボタン押下時に `POST /api/fetch-news` を呼び出します
-- Route Handler内でRSSを取得・パースし、`articles` テーブルに保存します
-- `articles.url` のunique制約を使い、同じ記事が重複登録されないようにしています
-
-### セキュリティ方針
-
-- `articles` への追加はクライアントから直接行いません
-- RSS取得・DB保存はRoute Handler経由で実行します
-- サーバー側では `SUPABASE_SERVICE_ROLE_KEY` を使用します
-- `SUPABASE_SERVICE_ROLE_KEY` は `NEXT_PUBLIC_` を付けず、ブラウザに公開しません
-- service role keyは `.env.local` で管理し、Gitには含めません
-
-### v1でやらないこと
-
-RSS取得に関して、v1では以下はまだ実装しません。
-
-- Vercel Cronによる自動取得
-- AIによる記事要約
-- LINE通知
-- ユーザーごとのRSSフィード追加
-- 記事本文のスクレイピング
-- 取得履歴テーブル
-- 高度なレコメンド
+- Next.js
+- TypeScript
+- Supabase
+- Supabase Auth
+- Supabase RLS
+- Vercel
+- Tailwind CSS
+- rss-parser
 
 ## 環境変数
 
@@ -161,10 +156,30 @@ RSS取得機能では、既存のSupabase接続情報に加えて、サーバー
 - `NEXT_PUBLIC_` を付けないでください
 - `.env.local` に設定し、Gitにはコミットしないでください
 
+## v1では未対応
+
+以下はv1ではまだ実装しない、または今後の拡張として扱う予定です。
+
+- AI要約
+- LINE通知
+- Vercel Cronによる自動取得
+- ユーザーごとのRSSフィード追加
+- 記事本文スクレイピング
+- 取得履歴テーブル
+- 高度なレコメンド
+- ページネーション
+- 保存解除
+- Markdown対応
+- 自動保存
+
 ## 今後の拡張
 
 - AIによる記事要約
-- RSS取得の自動化
-- LINE通知
-- 週次・月次の振り返り
-- ユーザーごとのRSSフィード管理
+- 毎朝のLINE通知
+- Vercel Cronによる定期取得
+- RSSソースの見直し
+- Qiita Popularなど話題記事フィードの追加
+- 保存済み記事の未読 / 読了フィルター
+- 保存解除機能
+- UI改善
+- Vercel本番デプロイ
