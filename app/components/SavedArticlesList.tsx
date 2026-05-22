@@ -154,6 +154,13 @@ export function SavedArticlesList() {
   const [statusErrorById, setStatusErrorById] = useState<
     Record<string, string>
   >({});
+  const [memoDraftById, setMemoDraftById] = useState<Record<string, string>>(
+    {},
+  );
+  const [savingMemoId, setSavingMemoId] = useState<string | null>(null);
+  const [memoErrorById, setMemoErrorById] = useState<Record<string, string>>(
+    {},
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -182,6 +189,9 @@ export function SavedArticlesList() {
         setSavedArticles([]);
         setStatusErrorById({});
         setUpdatingSavedArticleId(null);
+        setMemoDraftById({});
+        setMemoErrorById({});
+        setSavingMemoId(null);
       }
     });
 
@@ -206,10 +216,20 @@ export function SavedArticlesList() {
         }
 
         setSavedArticles(articles);
+        setMemoDraftById(
+          Object.fromEntries(
+            articles.map((savedArticle) => [
+              savedArticle.id,
+              savedArticle.memo ?? "",
+            ]),
+          ),
+        );
+        setMemoErrorById({});
       } catch {
         if (isMounted) {
           setErrorMessage("保存済み記事を取得できませんでした。");
           setSavedArticles([]);
+          setMemoDraftById({});
         }
       } finally {
         if (isMounted) {
@@ -262,6 +282,43 @@ export function SavedArticlesList() {
         article.id === savedArticle.id
           ? { ...article, status: nextStatus }
           : article,
+      ),
+    );
+  }
+
+  async function handleSaveMemo(savedArticle: SavedArticle) {
+    if (!user || savingMemoId) {
+      return;
+    }
+
+    const memo = memoDraftById[savedArticle.id] ?? "";
+
+    setSavingMemoId(savedArticle.id);
+    setMemoErrorById((current) => {
+      const next = { ...current };
+      delete next[savedArticle.id];
+      return next;
+    });
+
+    const { error } = await supabase
+      .from("saved_articles")
+      .update({ memo })
+      .eq("id", savedArticle.id)
+      .eq("user_id", user.id);
+
+    setSavingMemoId(null);
+
+    if (error) {
+      setMemoErrorById((current) => ({
+        ...current,
+        [savedArticle.id]: "メモを保存できませんでした。",
+      }));
+      return;
+    }
+
+    setSavedArticles((current) =>
+      current.map((article) =>
+        article.id === savedArticle.id ? { ...article, memo } : article,
       ),
     );
   }
@@ -338,6 +395,7 @@ export function SavedArticlesList() {
       {savedArticles.map((savedArticle) => {
         const article = getArticle(savedArticle);
         const isUpdatingStatus = updatingSavedArticleId === savedArticle.id;
+        const isSavingMemo = savingMemoId === savedArticle.id;
 
         return (
           <article
@@ -388,7 +446,33 @@ export function SavedArticlesList() {
                     <dt className="font-medium text-zinc-950 dark:text-zinc-50">
                       メモ
                     </dt>
-                    <dd className="mt-1">{savedArticle.memo || "メモなし"}</dd>
+                    <dd className="mt-2 flex flex-col gap-2">
+                      <textarea
+                        value={memoDraftById[savedArticle.id] ?? ""}
+                        onChange={(event) =>
+                          setMemoDraftById((current) => ({
+                            ...current,
+                            [savedArticle.id]: event.target.value,
+                          }))
+                        }
+                        rows={4}
+                        className="min-h-24 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-normal text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-emerald-400"
+                        placeholder="メモを入力"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveMemo(savedArticle)}
+                        disabled={isSavingMemo}
+                        className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-500 disabled:hover:bg-transparent dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:disabled:border-zinc-700 dark:disabled:text-zinc-400"
+                      >
+                        {isSavingMemo ? "保存中..." : "メモを保存"}
+                      </button>
+                      {memoErrorById[savedArticle.id] ? (
+                        <span className="text-sm leading-6 text-red-700 dark:text-red-400">
+                          {memoErrorById[savedArticle.id]}
+                        </span>
+                      ) : null}
+                    </dd>
                   </div>
                   <div>
                     <dt className="font-medium text-zinc-950 dark:text-zinc-50">
