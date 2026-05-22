@@ -1,0 +1,201 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { SaveArticleButton } from "./SaveArticleButton";
+
+export type Article = {
+  id: string;
+  title: string;
+  url: string;
+  source: string | null;
+  category: string | null;
+  published_at: string | null;
+};
+
+type ArticleFiltersAndListProps = {
+  articles: Article[];
+};
+
+function formatPublishedAt(value: string | null) {
+  if (!value) {
+    return "公開日時なし";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function getUniqueValues(
+  articles: Article[],
+  key: "source" | "category",
+) {
+  return Array.from(
+    new Set(
+      articles
+        .map((article) => article[key])
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+export function ArticleFiltersAndList({
+  articles,
+}: ArticleFiltersAndListProps) {
+  const [keyword, setKeyword] = useState("");
+  const [selectedSource, setSelectedSource] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  const sourceOptions = useMemo(
+    () => getUniqueValues(articles, "source"),
+    [articles],
+  );
+  const categoryOptions = useMemo(
+    () => getUniqueValues(articles, "category"),
+    [articles],
+  );
+
+  const filteredArticles = useMemo(() => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
+
+    return articles.filter((article) => {
+      const matchesKeyword =
+        normalizedKeyword.length === 0 ||
+        article.title.toLowerCase().includes(normalizedKeyword);
+      const matchesSource =
+        selectedSource.length === 0 || article.source === selectedSource;
+      const matchesCategory =
+        selectedCategory.length === 0 ||
+        article.category === selectedCategory;
+
+      return matchesKeyword && matchesSource && matchesCategory;
+    });
+  }, [articles, keyword, selectedCategory, selectedSource]);
+
+  const hasActiveFilters =
+    keyword.trim().length > 0 ||
+    selectedSource.length > 0 ||
+    selectedCategory.length > 0;
+
+  function clearFilters() {
+    setKeyword("");
+    setSelectedSource("");
+    setSelectedCategory("");
+  }
+
+  return (
+    <section className="flex flex-col gap-5">
+      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,14rem)_minmax(10rem,14rem)_auto] lg:items-end">
+          <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            キーワード
+            <input
+              type="search"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="タイトルで検索"
+              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-normal text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-emerald-400"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            source
+            <select
+              value={selectedSource}
+              onChange={(event) => setSelectedSource(event.target.value)}
+              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-normal text-zinc-950 outline-none transition-colors focus:border-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-emerald-400"
+            >
+              <option value="">すべて</option>
+              {sourceOptions.map((source) => (
+                <option key={source} value={source}>
+                  {source}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            category
+            <select
+              value={selectedCategory}
+              onChange={(event) => setSelectedCategory(event.target.value)}
+              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-normal text-zinc-950 outline-none transition-colors focus:border-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-emerald-400"
+            >
+              <option value="">すべて</option>
+              {categoryOptions.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            type="button"
+            onClick={clearFilters}
+            disabled={!hasActiveFilters}
+            className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            条件クリア
+          </button>
+        </div>
+      </div>
+
+      {filteredArticles.length > 0 ? (
+        <div className="grid gap-4">
+          {filteredArticles.map((article) => (
+            <article
+              key={article.id}
+              className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+            >
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <span>{article.source ?? "情報源なし"}</span>
+                  <span aria-hidden="true">/</span>
+                  <span>{article.category ?? "カテゴリなし"}</span>
+                  <span aria-hidden="true">/</span>
+                  <time dateTime={article.published_at ?? undefined}>
+                    {formatPublishedAt(article.published_at)}
+                  </time>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <h2 className="text-xl font-semibold leading-8 text-zinc-950 dark:text-zinc-50">
+                    {article.title}
+                  </h2>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-fit text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
+                    >
+                      記事を開く
+                    </a>
+                    <SaveArticleButton articleId={article.id} />
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+          <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+            条件に一致する記事がありません
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            キーワードや絞り込み条件を変更して、もう一度試してください。
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
