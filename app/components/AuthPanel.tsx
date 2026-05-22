@@ -98,7 +98,7 @@ export function AuthPanel() {
   }
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:min-w-80">
+    <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:min-w-80">
       {isAuthLoading ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           ログイン状態を確認しています。
@@ -124,6 +124,11 @@ export function AuthPanel() {
         </div>
       ) : (
         <form className="flex flex-col gap-3" onSubmit={handleLogin}>
+          <div>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Magic Linkログイン
+            </p>
+          </div>
           <div className="flex flex-col gap-2">
             <label
               htmlFor="auth-email"

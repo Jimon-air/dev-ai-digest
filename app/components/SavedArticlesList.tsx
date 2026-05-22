@@ -76,6 +76,18 @@ function getToggleStatusLabel(status: string | null) {
   return status === "read" ? "未読に戻す" : "読了にする";
 }
 
+function getStatusBadgeClassName(status: string | null) {
+  if (status === "unread") {
+    return "w-fit rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300";
+  }
+
+  if (status === "read") {
+    return "w-fit rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300";
+  }
+
+  return "w-fit rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
+}
+
 async function fetchSavedArticles(userId: string) {
   const relationResult = await supabase
     .from("saved_articles")
@@ -403,12 +415,17 @@ export function SavedArticlesList() {
             className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                <span>{article?.source ?? "情報源なし"}</span>
-                <span aria-hidden="true">/</span>
-                <span>{article?.category ?? "カテゴリなし"}</span>
-                <span aria-hidden="true">/</span>
-                <time dateTime={article?.published_at ?? undefined}>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  {article?.source ?? "情報源なし"}
+                </span>
+                <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  {article?.category ?? "カテゴリなし"}
+                </span>
+                <time
+                  dateTime={article?.published_at ?? undefined}
+                  className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                >
                   {formatDateTime(article?.published_at ?? null)}
                 </time>
               </div>
@@ -418,18 +435,20 @@ export function SavedArticlesList() {
                   {article?.title ?? "記事情報を取得できませんでした"}
                 </h2>
 
-                <dl className="grid gap-3 text-sm text-zinc-700 dark:text-zinc-300 sm:grid-cols-3">
+                <dl className="grid gap-4 text-sm text-zinc-700 dark:text-zinc-300 sm:grid-cols-2">
                   <div>
                     <dt className="font-medium text-zinc-950 dark:text-zinc-50">
                       状態
                     </dt>
                     <dd className="mt-2 flex flex-col gap-2">
-                      <span>{getStatusLabel(savedArticle.status)}</span>
+                      <span className={getStatusBadgeClassName(savedArticle.status)}>
+                        {getStatusLabel(savedArticle.status)}
+                      </span>
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(savedArticle)}
                         disabled={isUpdatingStatus}
-                        className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-500 disabled:hover:bg-transparent dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:disabled:border-zinc-700 dark:disabled:text-zinc-400"
+                        className="inline-flex h-9 w-full items-center justify-center rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-500 disabled:hover:bg-transparent dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:disabled:border-zinc-700 dark:disabled:text-zinc-400 sm:w-fit"
                       >
                         {isUpdatingStatus
                           ? "更新中..."
@@ -444,6 +463,14 @@ export function SavedArticlesList() {
                   </div>
                   <div>
                     <dt className="font-medium text-zinc-950 dark:text-zinc-50">
+                      保存日時
+                    </dt>
+                    <dd className="mt-2 text-zinc-600 dark:text-zinc-400">
+                      {formatDateTime(savedArticle.created_at)}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="font-medium text-zinc-950 dark:text-zinc-50">
                       メモ
                     </dt>
                     <dd className="mt-2 flex flex-col gap-2">
@@ -456,14 +483,14 @@ export function SavedArticlesList() {
                           }))
                         }
                         rows={4}
-                        className="min-h-24 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-normal text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-emerald-400"
+                        className="min-h-28 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-normal text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-emerald-400"
                         placeholder="メモを入力"
                       />
                       <button
                         type="button"
                         onClick={() => handleSaveMemo(savedArticle)}
                         disabled={isSavingMemo}
-                        className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-500 disabled:hover:bg-transparent dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:disabled:border-zinc-700 dark:disabled:text-zinc-400"
+                        className="inline-flex h-9 w-full items-center justify-center rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-500 disabled:hover:bg-transparent dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:disabled:border-zinc-700 dark:disabled:text-zinc-400 sm:w-fit"
                       >
                         {isSavingMemo ? "保存中..." : "メモを保存"}
                       </button>
@@ -474,14 +501,6 @@ export function SavedArticlesList() {
                       ) : null}
                     </dd>
                   </div>
-                  <div>
-                    <dt className="font-medium text-zinc-950 dark:text-zinc-50">
-                      保存日時
-                    </dt>
-                    <dd className="mt-1">
-                      {formatDateTime(savedArticle.created_at)}
-                    </dd>
-                  </div>
                 </dl>
 
                 {article ? (
@@ -489,7 +508,7 @@ export function SavedArticlesList() {
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-fit text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
+                    className="inline-flex h-9 w-full items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 sm:w-fit"
                   >
                     記事を開く
                   </a>

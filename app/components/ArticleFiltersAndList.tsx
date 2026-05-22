@@ -93,6 +93,19 @@ export function ArticleFiltersAndList({
   return (
     <section className="flex flex-col gap-5">
       <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+              記事を絞り込む
+            </h2>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              タイトル、情報源、カテゴリで記事を探せます。
+            </p>
+          </div>
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            {articles.length}件中 {filteredArticles.length}件を表示
+          </p>
+        </div>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,14rem)_minmax(10rem,14rem)_auto] lg:items-end">
           <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
             キーワード
@@ -141,7 +154,7 @@ export function ArticleFiltersAndList({
             type="button"
             onClick={clearFilters}
             disabled={!hasActiveFilters}
-            className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="inline-flex h-10 w-full items-center justify-center rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 lg:w-fit"
           >
             条件クリア
           </button>
@@ -156,12 +169,17 @@ export function ArticleFiltersAndList({
               className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
             >
               <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  <span>{article.source ?? "情報源なし"}</span>
-                  <span aria-hidden="true">/</span>
-                  <span>{article.category ?? "カテゴリなし"}</span>
-                  <span aria-hidden="true">/</span>
-                  <time dateTime={article.published_at ?? undefined}>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    {article.source ?? "情報源なし"}
+                  </span>
+                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    {article.category ?? "カテゴリなし"}
+                  </span>
+                  <time
+                    dateTime={article.published_at ?? undefined}
+                    className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  >
                     {formatPublishedAt(article.published_at)}
                   </time>
                 </div>
@@ -170,12 +188,12 @@ export function ArticleFiltersAndList({
                   <h2 className="text-xl font-semibold leading-8 text-zinc-950 dark:text-zinc-50">
                     {article.title}
                   </h2>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="flex flex-col gap-3 border-t border-zinc-100 pt-3 dark:border-zinc-800 sm:flex-row sm:items-center">
                     <a
                       href={article.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-fit text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
+                      className="inline-flex h-9 w-full items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 sm:w-fit"
                     >
                       記事を開く
                     </a>
