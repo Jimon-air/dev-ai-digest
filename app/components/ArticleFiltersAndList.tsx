@@ -16,6 +16,12 @@ type ArticleFiltersAndListProps = {
   articles: Article[];
 };
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+function padDatePart(value: number) {
+  return String(value).padStart(2, "0");
+}
+
 function formatPublishedAt(value: string | null) {
   if (!value) {
     return "公開日時なし";
@@ -24,14 +30,17 @@ function formatPublishedAt(value: string | null) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return "日時不明";
   }
 
-  return new Intl.DateTimeFormat("ja-JP", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Tokyo",
-  }).format(date);
+  const jstDate = new Date(date.getTime() + JST_OFFSET_MS);
+  const year = jstDate.getUTCFullYear();
+  const month = padDatePart(jstDate.getUTCMonth() + 1);
+  const day = padDatePart(jstDate.getUTCDate());
+  const hours = padDatePart(jstDate.getUTCHours());
+  const minutes = padDatePart(jstDate.getUTCMinutes());
+
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 
 function getUniqueValues(
@@ -44,7 +53,7 @@ function getUniqueValues(
         .map((article) => article[key])
         .filter((value): value is string => Boolean(value)),
     ),
-  ).sort((a, b) => a.localeCompare(b, "ja"));
+  ).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
 export function ArticleFiltersAndList({

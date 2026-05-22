@@ -31,6 +31,12 @@ type SavedArticleRow = {
   created_at: string | null;
 };
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+function padDatePart(value: number) {
+  return String(value).padStart(2, "0");
+}
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return "日時なし";
@@ -39,14 +45,17 @@ function formatDateTime(value: string | null) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return "日時不明";
   }
 
-  return new Intl.DateTimeFormat("ja-JP", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Tokyo",
-  }).format(date);
+  const jstDate = new Date(date.getTime() + JST_OFFSET_MS);
+  const year = jstDate.getUTCFullYear();
+  const month = padDatePart(jstDate.getUTCMonth() + 1);
+  const day = padDatePart(jstDate.getUTCDate());
+  const hours = padDatePart(jstDate.getUTCHours());
+  const minutes = padDatePart(jstDate.getUTCMinutes());
+
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 
 function getArticle(savedArticle: SavedArticle) {
