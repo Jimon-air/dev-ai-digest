@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SaveArticleButton } from "./SaveArticleButton";
 
 export type Article = {
   id: string;
@@ -226,7 +225,10 @@ export function ArticleFiltersAndList({
                     >
                       記事を開く
                     </a>
-                    <SaveArticleButton articleId={article.id} />
+                    {/* Hydration mismatch調査用の一時差分: SaveArticleButtonのみ表示しない */}
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                      保存ボタンは一時的に非表示
+                    </span>
                   </div>
                 </div>
               </div>

@@ -1,18 +1,13 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import {
+  ArticleFiltersAndList,
+  type Article,
+} from "./components/ArticleFiltersAndList";
 import { AuthPanel } from "./components/AuthPanel";
 import { FetchNewsButton } from "./components/FetchNewsButton";
 
 export const dynamic = "force-dynamic";
-
-type Article = {
-  id: string;
-  title: string;
-  url: string;
-  source: string | null;
-  category: string | null;
-  published_at: string | null;
-};
 
 export default async function Home() {
   const { data: articles, error } = await supabase
@@ -63,43 +58,7 @@ export default async function Home() {
             </p>
           </section>
         ) : articles && articles.length > 0 ? (
-          // Hydration mismatch調査用の一時差分:
-          // ArticleFiltersAndList と SaveArticleButton を外し、Server Component内で簡易一覧を描画します。
-          <section className="grid gap-4">
-            {(articles as Article[]).map((article) => (
-              <article
-                key={article.id}
-                className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                      {article.source ?? "情報源なし"}
-                    </span>
-                    <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      {article.category ?? "カテゴリなし"}
-                    </span>
-                    {article.published_at ? (
-                      <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                        {article.published_at}
-                      </span>
-                    ) : null}
-                  </div>
-                  <h2 className="text-xl font-semibold leading-8 text-zinc-950 dark:text-zinc-50">
-                    {article.title}
-                  </h2>
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-9 w-full items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 sm:w-fit"
-                  >
-                    記事を開く
-                  </a>
-                </div>
-              </article>
-            ))}
-          </section>
+          <ArticleFiltersAndList articles={articles as Article[]} />
         ) : (
           <section className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
             <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
