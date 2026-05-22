@@ -4,6 +4,17 @@ import type { User } from "@supabase/supabase-js";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
+function isEmailRateLimitError(error: unknown) {
+  const authError = error as { status?: number; code?: string };
+
+  return (
+    authError.status === 429 ||
+    authError.code === "over_email_send_rate_limit"
+  );
+}
+
 export function AuthPanel() {
   const [email, setEmail] = useState("");
   const [user, setUser] = useState<User | null>(null);
@@ -11,6 +22,7 @@ export function AuthPanel() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resendCooldownSeconds, setResendCooldownSeconds] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -46,8 +58,24 @@ export function AuthPanel() {
     };
   }, []);
 
+  useEffect(() => {
+    if (resendCooldownSeconds <= 0) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setResendCooldownSeconds((current) => Math.max(current - 1, 0));
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [resendCooldownSeconds]);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isSubmitting || resendCooldownSeconds > 0) {
+      return;
+    }
 
     const trimmedEmail = email.trim();
 
@@ -71,11 +99,22 @@ export function AuthPanel() {
     setIsSubmitting(false);
 
     if (error) {
+      console.error("Failed to send login link:", error);
+
+      if (isEmailRateLimitError(error)) {
+        setErrorMessage(
+          "短時間に複数回送信されたため、少し時間をおいてから再度お試しください。",
+        );
+        setResendCooldownSeconds(RESEND_COOLDOWN_SECONDS);
+        return;
+      }
+
       setErrorMessage("ログインリンクの送信に失敗しました。時間をおいて再度お試しください。");
       return;
     }
 
     setMessage("ログインリンクを送信しました。メールを確認してください。");
+    setResendCooldownSeconds(RESEND_COOLDOWN_SECONDS);
   }
 
   async function handleLogout() {
@@ -96,6 +135,13 @@ export function AuthPanel() {
     setEmail("");
     setMessage("ログアウトしました。");
   }
+
+  const isLoginButtonDisabled = isSubmitting || resendCooldownSeconds > 0;
+  const loginButtonLabel = isSubmitting
+    ? "送信中..."
+    : resendCooldownSeconds > 0
+      ? `再送信はあと ${resendCooldownSeconds} 秒`
+      : "ログインリンクを送信";
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:min-w-80">
@@ -149,10 +195,10 @@ export function AuthPanel() {
           </div>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isLoginButtonDisabled}
             className="inline-flex h-10 items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
           >
-            {isSubmitting ? "送信中..." : "ログインリンクを送信"}
+            {loginButtonLabel}
           </button>
         </form>
       )}
