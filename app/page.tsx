@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import {
-  ArticleFiltersAndList,
-  type Article,
-} from "./components/ArticleFiltersAndList";
 import { AuthPanel } from "./components/AuthPanel";
+import {
+  ClientOnlyArticleFiltersAndList,
+  type Article,
+} from "./components/ClientOnlyArticleFiltersAndList";
 import { FetchNewsButton } from "./components/FetchNewsButton";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +58,7 @@ export default async function Home() {
             </p>
           </section>
         ) : articles && articles.length > 0 ? (
-          <ArticleFiltersAndList articles={articles as Article[]} />
+          <ClientOnlyArticleFiltersAndList articles={articles as Article[]} />
         ) : (
           <section className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
             <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
