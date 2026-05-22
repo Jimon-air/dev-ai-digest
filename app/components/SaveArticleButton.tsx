@@ -9,6 +9,7 @@ type SaveArticleButtonProps = {
 };
 
 export function SaveArticleButton({ articleId }: SaveArticleButtonProps) {
+  const [hasMounted, setHasMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSavedLoading, setIsSavedLoading] = useState(false);
@@ -18,6 +19,7 @@ export function SaveArticleButton({ articleId }: SaveArticleButtonProps) {
 
   useEffect(() => {
     let isMounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     async function loadUser() {
       const { data, error } = await supabase.auth.getUser();
@@ -30,23 +32,37 @@ export function SaveArticleButton({ articleId }: SaveArticleButtonProps) {
       setIsAuthLoading(false);
     }
 
-    loadUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setIsAuthLoading(false);
-      setErrorMessage(null);
-
-      if (!session?.user) {
-        setIsSaved(false);
+    const mountedTimer = window.setTimeout(() => {
+      if (!isMounted) {
+        return;
       }
-    });
+
+      setHasMounted(true);
+      loadUser();
+
+      const authListener = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          if (!isMounted) {
+            return;
+          }
+
+          setUser(session?.user ?? null);
+          setIsAuthLoading(false);
+          setErrorMessage(null);
+
+          if (!session?.user) {
+            setIsSaved(false);
+          }
+        },
+      );
+
+      subscription = authListener.data.subscription;
+    }, 0);
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      window.clearTimeout(mountedTimer);
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -116,14 +132,14 @@ export function SaveArticleButton({ articleId }: SaveArticleButtonProps) {
     setIsSaved(true);
   }
 
-  if (isAuthLoading) {
+  if (!hasMounted || isAuthLoading) {
     return (
       <button
         type="button"
         disabled
         className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-500 disabled:cursor-not-allowed dark:border-zinc-700 dark:text-zinc-400"
       >
-        ログイン状態を確認中
+        保存状態を確認中...
       </button>
     );
   }
