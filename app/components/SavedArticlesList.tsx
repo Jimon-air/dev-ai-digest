@@ -202,6 +202,12 @@ export function SavedArticlesList() {
   const [memoErrorById, setMemoErrorById] = useState<Record<string, string>>(
     {},
   );
+  const [deletingSavedArticleId, setDeletingSavedArticleId] = useState<
+    string | null
+  >(null);
+  const [deleteErrorById, setDeleteErrorById] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     let isMounted = true;
@@ -233,6 +239,8 @@ export function SavedArticlesList() {
         setMemoDraftById({});
         setMemoErrorById({});
         setSavingMemoId(null);
+        setDeleteErrorById({});
+        setDeletingSavedArticleId(null);
       }
     });
 
@@ -266,6 +274,7 @@ export function SavedArticlesList() {
           ),
         );
         setMemoErrorById({});
+        setDeleteErrorById({});
       } catch {
         if (isMounted) {
           setErrorMessage("保存済み記事を取得できませんでした。");
@@ -364,6 +373,55 @@ export function SavedArticlesList() {
     );
   }
 
+  async function handleDeleteSavedArticle(savedArticle: SavedArticle) {
+    if (!user || deletingSavedArticleId) {
+      return;
+    }
+
+    setDeletingSavedArticleId(savedArticle.id);
+    setDeleteErrorById((current) => {
+      const next = { ...current };
+      delete next[savedArticle.id];
+      return next;
+    });
+
+    const { data, error } = await supabase
+      .from("saved_articles")
+      .delete()
+      .eq("id", savedArticle.id)
+      .eq("user_id", user.id)
+      .select("id");
+
+    setDeletingSavedArticleId(null);
+
+    if (error || !data || data.length === 0) {
+      setDeleteErrorById((current) => ({
+        ...current,
+        [savedArticle.id]: "保存解除できませんでした。",
+      }));
+      return;
+    }
+
+    setSavedArticles((current) =>
+      current.filter((article) => article.id !== savedArticle.id),
+    );
+    setMemoDraftById((current) => {
+      const next = { ...current };
+      delete next[savedArticle.id];
+      return next;
+    });
+    setStatusErrorById((current) => {
+      const next = { ...current };
+      delete next[savedArticle.id];
+      return next;
+    });
+    setMemoErrorById((current) => {
+      const next = { ...current };
+      delete next[savedArticle.id];
+      return next;
+    });
+  }
+
   if (isAuthLoading) {
     return (
       <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
@@ -437,6 +495,7 @@ export function SavedArticlesList() {
         const article = getArticle(savedArticle);
         const isUpdatingStatus = updatingSavedArticleId === savedArticle.id;
         const isSavingMemo = savingMemoId === savedArticle.id;
+        const isDeleting = deletingSavedArticleId === savedArticle.id;
 
         return (
           <article
@@ -532,15 +591,30 @@ export function SavedArticlesList() {
                   </div>
                 </dl>
 
-                {article ? (
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-9 w-full items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 sm:w-fit"
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  {article ? (
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-9 w-full items-center justify-center rounded-md bg-zinc-950 px-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 sm:w-fit"
+                    >
+                      記事を開く
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSavedArticle(savedArticle)}
+                    disabled={isDeleting}
+                    className="inline-flex h-9 w-full items-center justify-center rounded-md border border-red-700 px-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-500 disabled:hover:bg-transparent dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950/30 dark:disabled:border-zinc-700 dark:disabled:text-zinc-400 sm:w-fit"
                   >
-                    記事を開く
-                  </a>
+                    {isDeleting ? "解除中..." : "保存解除"}
+                  </button>
+                </div>
+                {deleteErrorById[savedArticle.id] ? (
+                  <span className="text-sm leading-6 text-red-700 dark:text-red-400">
+                    {deleteErrorById[savedArticle.id]}
+                  </span>
                 ) : null}
               </div>
             </div>
