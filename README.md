@@ -1,6 +1,6 @@
 # Dev AI Digest
 
-Dev AI Digestは、AI・開発ツール関連ニュースをRSSから取得し、気になる記事を保存・読了管理・メモ編集・保存解除できる開発者向けニュースダッシュボードです。
+Dev AI Digestは、AI・開発ツール関連ニュースをRSSから取得し、検索・保存・読了管理・メモ編集ができるニュースダッシュボードです。Next.js / TypeScript / Supabase / Vercelを使用し、RSS取得、Magic Linkログイン、RLSを前提としたユーザー別の保存記事管理を実装しています。
 
 ## 作成目的
 
