@@ -31,6 +31,14 @@ type SavedArticleRow = {
   created_at: string | null;
 };
 
+type StatusFilter = "all" | "unread" | "read";
+
+const STATUS_FILTER_OPTIONS: { label: string; value: StatusFilter }[] = [
+  { label: "すべて", value: "all" },
+  { label: "未読", value: "unread" },
+  { label: "読了", value: "read" },
+];
+
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const ISO_TIME_ZONE_PATTERN = /(Z|[+-]\d{2}:?\d{2})$/i;
 
@@ -115,6 +123,17 @@ function getStatusBadgeClassName(status: string | null) {
   }
 
   return "w-fit rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
+}
+
+function getStatusFilterButtonClassName(isSelected: boolean) {
+  const baseClassName =
+    "inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors";
+
+  if (isSelected) {
+    return `${baseClassName} bg-emerald-700 text-white dark:bg-emerald-500 dark:text-zinc-950`;
+  }
+
+  return `${baseClassName} text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800`;
 }
 
 async function fetchSavedArticles(userId: string) {
@@ -208,6 +227,12 @@ export function SavedArticlesList() {
   const [deleteErrorById, setDeleteErrorById] = useState<
     Record<string, string>
   >({});
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const filteredSavedArticles =
+    statusFilter === "all"
+      ? savedArticles
+      : savedArticles.filter((article) => article.status === statusFilter);
 
   useEffect(() => {
     let isMounted = true;
@@ -241,6 +266,7 @@ export function SavedArticlesList() {
         setSavingMemoId(null);
         setDeleteErrorById({});
         setDeletingSavedArticleId(null);
+        setStatusFilter("all");
       }
     });
 
@@ -491,7 +517,33 @@ export function SavedArticlesList() {
 
   return (
     <section className="grid gap-4">
-      {savedArticles.map((savedArticle) => {
+      <div className="flex flex-wrap gap-2 rounded-lg border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
+        {STATUS_FILTER_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setStatusFilter(option.value)}
+            className={getStatusFilterButtonClassName(
+              statusFilter === option.value,
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {filteredSavedArticles.length === 0 ? (
+        <section className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+          <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+            条件に一致する保存記事がありません
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            フィルターを切り替えると、ほかの保存済み記事を確認できます。
+          </p>
+        </section>
+      ) : null}
+
+      {filteredSavedArticles.map((savedArticle) => {
         const article = getArticle(savedArticle);
         const isUpdatingStatus = updatingSavedArticleId === savedArticle.id;
         const isSavingMemo = savingMemoId === savedArticle.id;
