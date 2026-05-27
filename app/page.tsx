@@ -5,6 +5,7 @@ import {
   ClientOnlyArticleFiltersAndList,
   type Article,
 } from "./components/ClientOnlyArticleFiltersAndList";
+import { AiSummaryPanel, type AiSummary } from "./components/AiSummaryPanel";
 import { FetchNewsButton } from "./components/FetchNewsButton";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,17 @@ export default async function Home() {
 
   if (error) {
     console.error("Failed to fetch articles:", error);
+  }
+
+  const { data: latestSummary, error: latestSummaryError } = await supabase
+    .from("daily_ai_summaries")
+    .select("summary_date, title, summary, article_count, model")
+    .order("summary_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestSummaryError) {
+    console.error("Failed to fetch latest AI summary:", latestSummaryError);
   }
 
   return (
@@ -49,6 +61,12 @@ export default async function Home() {
             <AuthPanel />
           </div>
         </header>
+
+        <AiSummaryPanel
+          initialSummary={
+            latestSummaryError ? null : (latestSummary as AiSummary | null)
+          }
+        />
 
         {error ? (
           <section className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-950 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-100">
