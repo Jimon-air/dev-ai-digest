@@ -24,6 +24,9 @@ type AiSummaryPanelProps = {
   initialSummary: AiSummary | null;
 };
 
+const COMPACT_SUMMARY_LENGTH = 420;
+const COMPACT_SUMMARY_LINE_BREAKS = 8;
+
 function toAiSummary(result: GenerateSummaryResponse): AiSummary | null {
   if (
     !result.summaryDate ||
@@ -47,9 +50,14 @@ function toAiSummary(result: GenerateSummaryResponse): AiSummary | null {
 export function AiSummaryPanel({ initialSummary }: AiSummaryPanelProps) {
   const isRequestInFlight = useRef(false);
   const [summary, setSummary] = useState<AiSummary | null>(initialSummary);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const shouldCollapseSummary = summary
+    ? summary.summary.length > COMPACT_SUMMARY_LENGTH ||
+      summary.summary.split("\n").length - 1 >= COMPACT_SUMMARY_LINE_BREAKS
+    : false;
 
   async function handleGenerateSummary() {
     if (isRequestInFlight.current) {
@@ -80,6 +88,7 @@ export function AiSummaryPanel({ initialSummary }: AiSummaryPanelProps) {
       }
 
       setSummary(nextSummary);
+      setIsExpanded(false);
       setMessage(result.message);
     } catch {
       setErrorMessage("AI要約の生成に失敗しました。");
@@ -120,8 +129,26 @@ export function AiSummaryPanel({ initialSummary }: AiSummaryPanelProps) {
         </div>
 
         {summary ? (
-          <div className="whitespace-pre-wrap text-sm leading-7 text-zinc-700 dark:text-zinc-300">
-            {summary.summary}
+          <div className="flex flex-col gap-3">
+            <div
+              className={`whitespace-pre-wrap text-sm leading-7 text-zinc-700 dark:text-zinc-300 ${
+                shouldCollapseSummary && !isExpanded
+                  ? "max-h-40 overflow-hidden"
+                  : ""
+              }`}
+            >
+              {summary.summary}
+            </div>
+            {shouldCollapseSummary ? (
+              <button
+                type="button"
+                aria-expanded={isExpanded}
+                onClick={() => setIsExpanded((current) => !current)}
+                className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                {isExpanded ? "閉じる" : "全文を表示"}
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="flex flex-col gap-4">
