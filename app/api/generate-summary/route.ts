@@ -117,7 +117,7 @@ function summaryResponse(
   });
 }
 
-export async function POST() {
+export async function generateDailyAiSummary() {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_SUMMARY_MODEL ?? DEFAULT_GEMINI_SUMMARY_MODEL;
   const summaryDate = getJstDateString();
@@ -289,4 +289,8 @@ export async function POST() {
     "今日のAI要約を生成しました。",
     false,
   );
+}
+
+export async function POST() {
+  return generateDailyAiSummary();
 }
